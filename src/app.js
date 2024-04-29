@@ -2,7 +2,7 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
-import { SIZE_LIMIT } from './constants';
+import { SIZE_LIMIT } from './constants.js';
 
 // ? creating the express application
 const app = express();
