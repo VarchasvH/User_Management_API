@@ -20,7 +20,7 @@ then(() => {
 
   // * Listening to the port
   app.listen(process.env.PORT || 8000, () => {
-  console.log(`The server is running on http://${process.env.PORT}`)
+  console.log(`The server is running on http://localhost:${process.env.PORT}`)
 } )})
 
 // ! Error handling

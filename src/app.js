@@ -8,7 +8,6 @@ import { SIZE_LIMIT } from './constants.js';
 const app = express();
 
 // ?  Express configuration starts
-
 // * ! Setting CORS configuration
 app.use(cors({
 
@@ -24,9 +23,14 @@ app.use(express.json({limit: SIZE_LIMIT}));
 app.use(express.urlencoded({extended: true,limit: SIZE_LIMIT}));
 // * Creating a public folder
 app.use(express.static('public'));
-
 // * Configuring such that we can perform CRUD operations on the cookies
 app.use(cookieParser());
+
+// ? Routes import
+import userRouter from './routes/user.routes.js';
+
+// ? Routes declaration
+app.use("/api/v1/users", userRouter);
 
 // ? exporting
 export default app;
