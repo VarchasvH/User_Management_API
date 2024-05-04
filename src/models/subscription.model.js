@@ -12,8 +12,9 @@ const subscriptionSchema = new Schema({
    */
   subscriber: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'User'
   },
+
   /**
    * @description Channel owner
    * @type {ObjectId}
@@ -21,17 +22,20 @@ const subscriptionSchema = new Schema({
    */
   channel: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-  },
-  /**
+    ref: 'User'
+  }
+
+},
+/**
    * @description Timestamps for creation and update
    * @type {Date}
    */
-  timestamps: true,
-});
+  {
+    timestamps: true
+  });
 
-/**
+  /**
  * @description Subscription model for the application
  * @type {Model}
  */
-export const Subscription = mongoose.model('Subscription', subscriptionSchema);
+  export const Subscription = mongoose.model('Subscription', subscriptionSchema);
