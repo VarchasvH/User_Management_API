@@ -1,9 +1,9 @@
+import jwt from 'jsonwebtoken';
 import asyncHandler from '../utils/asyncHandler.js'
 import ApiError from '../utils/ApiError.js';
 import { User } from '../models/user.model.js';
 import uploadOnCloudinary from '../utils/cloudinary.js';
 import ApiResponse from '../utils/ApiResponse.js';
-import jwt from 'jsonwebtoken';
 
 /**
  * @description Generates a new access token and refresh token for the given user.
@@ -282,9 +282,167 @@ TODO Logic behind refreshing the access token
   }
 });
 
+/**
+ * @description Changes the current password of the logged-in user.
+ * @memberof UserController
+ * @route PUT /api/v1/users/change-password
+ * @param {string} oldPassword - The old password of the user.
+ * @param {string} newPassword - The new password of the user.
+ * @returns {object} A JSON object containing a success message.
+ * @throws {ApiError} If the old password is incorrect or if there is an error updating the password.
+*/
+const changeCurrentPassword = asyncHandler( async ( req, res ) => {
+
+  const {oldPassword, newPassword} = req.body;
+
+  const user = await User.findById(req.user?._id); // ? auth.middleware
+
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+
+  if(!isPasswordCorrect) throw new ApiError(400, 'Invalid old password');
+
+  user.password = newPassword;
+
+  await user.save({validateBeforeSave: false});
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(200, {},'Password updated successfully')
+  );
+});
+
+/**
+ * @description Fetches the current logged-in user.
+ * @memberof UserController
+ * @route GET /api/v1/users/current-user
+ * @returns {object} A JSON object containing the current logged-in user's details.
+ * @throws {ApiError} If the user does not exist.
+ */
+const getCurrentUser = asyncHandler(async ( req, res ) => {
+  return res
+  .status(200)
+  .json(200, req.user, 'Current user fetched successfully')
+});
+
+/**
+ * @description Updates the account details of the logged-in user.
+ * @memberof UserController
+ * @route PUT /api/v1/users/update-account-details
+ * @param {string} fullName - The new full name of the user.
+ * @param {string} email - The new email of the user.
+ * @returns {object} A JSON object containing the updated user's details.
+ * @throws {ApiError} If the user does not exist, or if any of the required fields are empty.
+ */
+const updateAccountDetails = asyncHandler(async ( req, res ) => {
+  const {fullName, email} = req.body;
+
+  if(!fullName || !email) {
+    throw new ApiError(400, 'Full name and email must be provided');
+  }
+
+  const user = User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        fullName,
+        email
+      }
+    },
+    {new: true}
+  ).select('-password');
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(200, user, 'Account details updated successfully')
+  )
+});
+
+/**
+ * @description Updates the user's avatar.
+ * @memberof UserController
+ * @route PUT /api/v1/users/update-user-avatar
+ * @param {string} avatarFile - The path to the new avatar file.
+ * @returns {object} A JSON object containing the updated user's details.
+ * @throws {ApiError} If the user does not exist, or if any of the required fields are empty.
+ */
+const updateUserAvatar = asyncHandler(async(req, res) => {
+  const avatarLocalPath = req.file?.path;
+
+  if (!avatarLocalPath) {
+    throw new ApiError(400, 'Avatar file is missing')
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  if(!avatar.url){
+    throw new ApiError(500, 'Error uploading avatar to cloudinary')
+  }
+
+  const user = await User.findByIdAndUpdate(
+    request.user?._id,
+    {
+      $set: {
+        avatar: avatar.url
+      }
+    },
+    { new: true }
+  ).select('-password')
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(200, user, 'Avatar updated successfully')
+  )
+});
+
+/**
+ * @description Updates the user's cover image.
+ * @memberof UserController
+ * @route PUT /api/v1/users/update-user-cover-image
+ * @param {string} coverImageFile - The path to the new cover image file.
+ * @returns {object} A JSON object containing the updated user's details.
+ * @throws {ApiError} If the user does not exist, or if any of the required fields are empty.
+ */
+const updateUserCoverImage = asyncHandler(async(req, res) => {
+  const coverImageLocalPath = req.file?.path;
+
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, 'Cover image is missing')
+  }
+
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+  if(!coverImage.url){
+    throw new ApiError(500, 'Error uploading cover image to cloudinary')
+  }
+
+  const user = await User.findByIdAndUpdate(
+    request.user?._id,
+    {
+      $set: {
+        coverImage: coverImage.url
+      }
+    },
+    { new: true }
+  ).select('-password')
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(200, user, 'Cover image updated successfully')
+  )
+});
+
 export {
   registerUser,
   loginUser,
   logoutUser,
-  refreshAccessToken
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser,
+  updateAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImage
 };
