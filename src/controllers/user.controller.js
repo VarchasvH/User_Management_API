@@ -4,6 +4,8 @@ import ApiError from '../utils/ApiError.js';
 import { User } from '../models/user.model.js';
 import uploadOnCloudinary from '../utils/cloudinary.js';
 import ApiResponse from '../utils/ApiResponse.js';
+import { Subscription } from '../models/subscription.model.js';
+import mongoose from 'mongoose';
 
 /**
  * @description Generates a new access token and refresh token for the given user.
@@ -458,6 +460,146 @@ TODO - The logic behind updating the user's avatar
   )
 });
 
+/**
+ * @memberof UserController
+ * @route GET /api/v1/users/channel-profile/:username
+ * @param {string} username - The username of the user whose channel profile you want to fetch.
+ * @returns {object} A JSON object containing the channel profile details of the specified user.
+ * @throws {ApiError} If the user does not exist.
+ */
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+
+  // ? Get the user from the url
+  const {username} = req.params;
+  if(!username?.trim()) throw new ApiError(400, 'Please Login :: No username found');
+
+  const channel = await User.aggregate([
+    // ! Filtering a singular document from the db
+    {
+      $match: {
+        username: username?.toLowerCase()
+      }
+    },
+    {
+      // ? Subscribed to us
+      $lookup: {
+        from: 'subscriptions',
+        localField: '_id',
+        foreignField: 'channel',
+        as: 'subscribers'
+      }
+    },
+    {
+      // ? Subscribed by us
+      $lookup: {
+        from: 'subscriptions',
+        localField: '_id',
+        foreignField: 'subscriber',
+        as: 'subscribedTo'
+      }
+    },
+    {
+      $addFields: {
+        subscribersCount: {
+          $size: '$subscribers'
+        },
+        subscribedToCount: {
+          $size: '$subscribedTo'
+        },
+        isSubscribed: {
+          $condition: {
+            // ? if we are subscribed
+            if: {$in: [req.user?._id, '$subscribers.subscriber']},
+            then: true,
+            else: false
+          }
+        }
+      }
+    },
+    {
+      $project: {
+        fullName: 1,
+        username: 1,
+        avatar: 1,
+        coverImage: 1,
+        subscribersCount: 1,
+        subscribedToCount: 1,
+        isSubscribed: 1
+      }
+    }
+  ]);
+
+  if(!channel?.length) throw new ApiError(404, 'Channel not found');
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(200, channel[0], 'Channel profile fetched successfully')
+  )
+});
+
+/**
+ * @memberof UserController
+ * @route GET /api/v1/users/channel-profile/:username
+ * @param {string} username - The username of the user whose channel profile you want to fetch.
+ * @returns {object} A JSON object containing the channel profile details of the specified user.
+ * @throws {ApiError} If the user does not exist.
+ */
+const getWatchHistory = asyncHandler(async(req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id)
+      }
+    },
+    {
+      $lookup: {
+        from: 'videos',
+        localField: 'watchHistory',
+        foreignField: '_id',
+        as: 'watchHistory',
+        pipeline: [
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'owner',
+              foreignField: '_id',
+              as: 'owner',
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                    coverImage: 1
+                  }
+                },
+                {
+                  $addFields: {
+                    owner: {
+                      $first: '$owner'
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]);
+
+  return res
+  .status(200)
+  .json(
+    new ApiResponse(
+      200,
+      user[0].watchHistory,
+      'Watch history fetched successfully'
+    )
+  )
+})
+
 export {
   registerUser,
   loginUser,
@@ -467,5 +609,7 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
-  updateUserCoverImage
+  updateUserCoverImage,
+  getUserChannelProfile,
+  getWatchHistory
 };
