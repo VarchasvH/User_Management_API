@@ -238,8 +238,8 @@ TODO Logic behind refreshing the access token
   * 1. Get the refreshToken from the cookies.
   * 2. Check if the refreshToken is valid or not.
   * 3. Generate Access and Refresh token
+  * 4. Send cookies and success message.
 */
-
   // ! Get the refreshToken from the cookies.
   const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
     // ? If there is no refresh token
@@ -264,7 +264,7 @@ TODO Logic behind refreshing the access token
     }
     const {accessToken, newRefreshToken} = await generateAccessAndRefreshToken(user._id);
 
-    // ! Return response
+    // ! Send cookies and success message
     return res
     .status(200)
     .cookie('accessToken', accessToken, options)
@@ -292,6 +292,12 @@ TODO Logic behind refreshing the access token
  * @throws {ApiError} If the old password is incorrect or if there is an error updating the password.
 */
 const changeCurrentPassword = asyncHandler( async ( req, res ) => {
+/* TODO - The logic behind changing the current password of the logged-in user
+  * 1. Get the oldPassword and newPassword from the body.
+  * 2. Check if the old password is correct.
+  * 3. Update the password in the database.
+  * 4. Return a success message.
+*/
 
   const {oldPassword, newPassword} = req.body;
 
@@ -320,6 +326,10 @@ const changeCurrentPassword = asyncHandler( async ( req, res ) => {
  * @throws {ApiError} If the user does not exist.
  */
 const getCurrentUser = asyncHandler(async ( req, res ) => {
+/* TODO - The logic behind fetching the current logged-in user
+  * 1. Fetch the current logged-in user from the database.
+  * 2. Return the user's details along with a success message.
+*/
   return res
   .status(200)
   .json(200, req.user, 'Current user fetched successfully')
@@ -335,13 +345,20 @@ const getCurrentUser = asyncHandler(async ( req, res ) => {
  * @throws {ApiError} If the user does not exist, or if any of the required fields are empty.
  */
 const updateAccountDetails = asyncHandler(async ( req, res ) => {
+/*
+  TODO - The logic behind updating the account details of the logged-in user
+  * 1. Get the fullName and email from the body.
+  * 2. Check if the fields are not empty.
+  * 3. Update the user's details in the database.
+  * 4. Return a success message along with the updated user's details.
+*/
   const {fullName, email} = req.body;
 
   if(!fullName || !email) {
     throw new ApiError(400, 'Full name and email must be provided');
   }
 
-  const user = User.findByIdAndUpdate(
+  const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -406,6 +423,12 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
  * @throws {ApiError} If the user does not exist, or if any of the required fields are empty.
  */
 const updateUserCoverImage = asyncHandler(async(req, res) => {
+/*
+TODO - The logic behind updating the user's avatar
+  * 1. Get the path to the new avatar file from the body.
+  * 2. Check if the avatar file is not empty.
+  * 3. Upload the avatar file to the cloudinary
+*/
   const coverImageLocalPath = req.file?.path;
 
   if (!coverImageLocalPath) {
