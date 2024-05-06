@@ -198,8 +198,9 @@ TODO Logic behind logout functionality
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined
+      // ! This removes the field from document
+      $unset: {
+        refreshToken: 1
       }
     },
     {
@@ -334,7 +335,9 @@ const getCurrentUser = asyncHandler(async ( req, res ) => {
 */
   return res
   .status(200)
-  .json(200, req.user, 'Current user fetched successfully')
+  .json(
+    new ApiResponse(200, req.user, 'Current user fetched successfully')
+  )
 });
 
 /**
@@ -356,8 +359,8 @@ const updateAccountDetails = asyncHandler(async ( req, res ) => {
 */
   const {fullName, email} = req.body;
 
-  if(!fullName || !email) {
-    throw new ApiError(400, 'Full name and email must be provided');
+  if(!(fullName || email)) {
+    throw new ApiError(400, 'Full name or email must be provided');
   }
 
   const user = await User.findByIdAndUpdate(
@@ -507,7 +510,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
           $size: '$subscribedTo'
         },
         isSubscribed: {
-          $condition: {
+          $cond: {
             // ? if we are subscribed
             if: {$in: [req.user?._id, '$subscribers.subscriber']},
             then: true,
